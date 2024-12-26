@@ -51,8 +51,6 @@ MUL_OF_7 = [14, 21, 28, 42, 49, 56, 63, 77, 84, 98, 112, 119, 126, 133, 147, 154
 
 MUL_OF_13 = [26, 39, 52, 78, 104, 117, 143, 156, 169, 208, 221, 234, 247]
 
-
-
 def get_2_bits(value: int) -> int:
     """
     Takes a byte, gives 2 bits
@@ -117,10 +115,10 @@ def decode_xor(message: bytes, key: int) -> bytes:
     return encode_xor(message, key) # XOR is symmetric
 
 def encode(message: bytes, key: int) -> bytes:
-    return encode_xor(message, key)
+    return encode_bit_pairs(encode_xor(message, key))
 
 def decode(message: bytes, key: int) -> bytes:
-    return decode_xor(message, key)
+    return decode_xor(decode_bit_pairs(message), key)
 
 class MyCovertChannel(CovertChannelBase):
     """
@@ -131,13 +129,13 @@ class MyCovertChannel(CovertChannelBase):
         self.precision = 0
         self.data = b''
         self.finished = False
-    def send(self, log_file_name, ntp_epoch, key, finisher):
+    def send(self, log_file_name, ntp_epoch, key, finisher, time_file):
         """
         - In this function, you expected to create a random message (using function/s in CovertChannelBase), and send it to the receiver container. Entire sending operations should be handled in this function.
         - After the implementation, please rewrite this comment part to explain your code basically.
         """
-        binary_message = self.generate_random_binary_message_with_logging(log_file_name, 128, 128)[:-8]
-        with open('times.txt', 'w') as f:
+        binary_message = self.generate_random_binary_message_with_logging(log_file_name, 127, 127)[:-8]
+        with open(time_file, 'w') as f:
             f.write(str(datetime.now().timestamp()) + '\n')
         byte_message = bytes(
             takewhile(
@@ -157,7 +155,7 @@ class MyCovertChannel(CovertChannelBase):
             send_integer(number, super().send, ntp_epoch)
         # TODO encode message
 
-    def receive(self, log_file_name, ntp_epoch, key, finisher):
+    def receive(self, log_file_name, ntp_epoch, key, finisher, time_file):
         """
         - In this function, you are expected to receive and decode the transferred message. Because there are many types of covert channels, the receiver implementation depends on the chosen covert channel type, and you may not need to use the functions in CovertChannelBase.
         - After the implementation, please rewrite this comment part to explain your code basically.
@@ -175,15 +173,15 @@ class MyCovertChannel(CovertChannelBase):
                 if ord(finisher) in written:
                     start_stamp = 0.0
                     self.data = self.data
-                    with open('times.txt', 'r') as f:
+                    decoded = decode(bytes(takewhile(lambda x: x != ord(finisher), self.data)), key) + b'.'
+                    with open(time_file, 'r') as f:
                         start_stamp = float(f.read())
-                    with open('times.txt', 'w') as f:
+                    with open(time_file, 'w') as f:
                         stop_stamp = datetime.now().timestamp()
-                        throughput = (len(self.data) + 1) / (stop_stamp - start_stamp)
-                        f.write(str(throughput))
+                        throughput = (len(decoded)) / (stop_stamp - start_stamp)
+                        f.write(str(throughput) + '\n' + str(len(decoded)))
                     with open(log_file_name, 'wb') as f:
-                        decoded = decode(bytes(takewhile(lambda x: x != ord(finisher), self.data)), key)
-                        f.write(decoded + b'.')
+                        f.write(decoded)
                     self.finished = True
 
                 ntp_response = b'\x1c' + (  # LI=0, Version=4, Mode=4 (Server)

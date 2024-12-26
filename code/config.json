@@ -5,7 +5,8 @@
       "log_file_name": "sender.log",
       "ntp_epoch": 2208988800,
       "key": 3735928559,
-      "finisher": "$"
+      "finisher": "$",
+      "time_file": "times.txt"
     }
   },
   "receive": {
@@ -13,7 +14,8 @@
       "log_file_name": "receiver.log",
       "ntp_epoch": 2208988800,
       "key": 3735928559,
-      "finisher": "$"
+      "finisher": "$",
+      "time_file": "times.txt"
     }
   }
 }
