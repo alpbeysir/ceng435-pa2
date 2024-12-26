@@ -2,12 +2,18 @@
   "covert_channel_code": "CSC-PSV-NTP-TT",
   "send": {
     "parameters": {
-      "log_file_name": "sender.log"
+      "log_file_name": "sender.log",
+      "ntp_epoch": 2208988800,
+      "key": 3735928559,
+      "finisher": "$"
     }
   },
   "receive": {
     "parameters": {
-      "log_file_name": "receiver.log"
+      "log_file_name": "receiver.log",
+      "ntp_epoch": 2208988800,
+      "key": 3735928559,
+      "finisher": "$"
     }
   }
 }
