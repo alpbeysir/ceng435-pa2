@@ -6,7 +6,7 @@
       "ntp_epoch": 2208988800,
       "key": 3735928559,
       "time_file": "times.txt",
-      "divisables": [2, 3, 5, 7, 11, 13],
+      "divisors": [2, 3, 5, 7, 11, 13],
       "port": 123
     }
   },
@@ -16,7 +16,7 @@
       "key": 3735928559,
       "terminator": ".",
       "time_file": "times.txt",
-      "divisables": [2, 3, 5, 7, 11, 13],
+      "divisors": [2, 3, 5, 7, 11, 13],
       "port": 123
     }
   }
