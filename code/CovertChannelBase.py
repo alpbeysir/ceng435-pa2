@@ -21,7 +21,7 @@ class CovertChannelBase:
         if packet.haslayer(ARP) or packet.haslayer(LLC):
             sendp(packet, iface=interface, verbose=False)
         else:
-            send(packet, iface=interface, verbose=False)
+            send(packet, verbose=False)
     def log_message(self, message, log_file_name):
         """
         - You can use this function to log the received message and it is not a must, you can write your own.
