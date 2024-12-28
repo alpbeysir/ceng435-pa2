@@ -1,6 +1,6 @@
 # CSC-PSV-NTP-TT
 
-This project implements a covert communication channel by manipulating the reference timestamp field in the Network Time Protocol (NTP).
+We implemented a covert communication channel by manipulating the reference timestamp field in the Network Time Protocol (NTP).
 By lowering the precision of the timestamp, the last 4 bytes of the reference timestamp become unused, allowing them to carry hidden data.
 
 The data is first encoded using prime number groupings, which organizes it into structured groups.
