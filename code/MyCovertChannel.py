@@ -13,10 +13,24 @@ from CovertChannelBase import CovertChannelBase
 from scapy.all import *
 
 def get_field_bytes(pkt: NTPHeader, name):
+    """
+    Utility function to extract field bytes from a NTP packet.
+
+    :param pkt: The NTP packet
+    :param name: The name of the field to be extracted
+    :return: The extracted field
+    """
     fld, val = pkt.getfield_and_val(name)
     return fld.addfield(pkt, b"", val)
 
 def get_ntp_timestamp(ntp_epoch: int, hidden_data: int = 0) -> int:
+    """
+    Gets the NTP timestamp value corresponding to the given epoch and hidden data.
+
+    :param ntp_epoch: The NTP epoch
+    :param hidden_data: The hidden data to be embbedded in the timestamp
+    :return: The NTP timestamp
+    """
     unix_time = time.time()
     ntp_time = unix_time + ntp_epoch
     seconds = int(ntp_time)
@@ -25,6 +39,14 @@ def get_ntp_timestamp(ntp_epoch: int, hidden_data: int = 0) -> int:
     return timestamp
 
 def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
+    """
+    Sends a hidden integer in an NTP packet.
+
+    :param integer: The hidden integer
+    :param sender_func: The sender function to be used (base send)
+    :param ntp_epoch: The NTP epoch
+    :param port: The NTP port
+    """
     current_ntp_timestamp = get_ntp_timestamp(ntp_epoch, integer)
     timestamp_with_hidden_data = current_ntp_timestamp.to_bytes(8, byteorder='big')
 
@@ -45,6 +67,12 @@ def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
 
 @cache
 def is_prime(n: int) -> bool:
+    """
+    Checks if a number is prime.
+
+    :param n: The number to check
+    :return: A boolean indicating if the number is prime
+    """
     max_factor = int(n ** 0.5)
     for num in range(2, max_factor+1):
         if n % num == 0:
@@ -371,7 +399,6 @@ class MyCovertChannel(CovertChannelBase):
 
                 # Stop receiving and save the message to the log_file_name if terminator is in the message
                 if ord(terminator) in decoded[-4:]:
-                    start_stamp = 0.0
                     # Get the current time as the stop time
                     stop_stamp = datetime.now().timestamp()
 
@@ -392,7 +419,7 @@ class MyCovertChannel(CovertChannelBase):
                     # Flag the finish so that the stop_filter of sniff stops sniffing
                     self.finished = True
 
-                
+
     def receive(self, log_file_name, key, terminator, time_file, divisors, port):
         """
         Receives an XOR- and group-encoded message from the sender and decodes it.
