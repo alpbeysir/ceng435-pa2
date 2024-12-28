@@ -45,7 +45,6 @@ def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
 
 @cache
 def is_prime(n: int) -> bool:
-    global PRIMES
     max_factor = int(n ** 0.5)
     for num in range(2, max_factor+1):
         if n % num == 0:
@@ -63,6 +62,8 @@ def make_byte(value: int, groups: list[list[int]]) -> int:
 
     # Get random
     return choice(groups[value])
+
+
 def make_bytes(value: int, bit_count: int, groups: list[list[int]]) -> list[int]:
     """
     Convert a byte into multiple bytes. Takes 1 byte, gives ceil(8 / bit_count) bytes.
@@ -88,6 +89,8 @@ def make_bytes(value: int, bit_count: int, groups: list[list[int]]) -> list[int]
     
     # Encode each bit group into bytes corresponding to the groups
     return [make_byte(p, groups) for p in ret]
+
+
 def encode_bit_pairs(message: bytes, bit_count: int, groups: list[list[int]]) -> bytes:
     """
     Encodes a message using groups.
@@ -117,6 +120,8 @@ def get_bits(value: int, groups: list[list[int]]) -> int:
         if value in g:
             return i
     return 0
+
+
 def get_byte(values: list[int], bit_count: int, groups: list[list[int]]) -> int:
     """
     Convert multiple bytes into a single byte. Takes ceil(8 / bit_count) bytes, gives 1 byte.
@@ -134,10 +139,12 @@ def get_byte(values: list[int], bit_count: int, groups: list[list[int]]) -> int:
         ret = ret << bit_count
         ret = ret | g
     return ret
+
+
 def decode_bit_pairs(message: bytes, bit_count: int, groups: list[list[int]]) -> bytes:
     """
     Decodes a message using groups.
-
+    :param message: The message to be decoded.
     :param bit_count: The number of bits the groups can represent. This is here as a pre-calculation, the same value \
     can be calculated from the groups.
     :param groups: The group partitions to be used to decode the message.
@@ -235,6 +242,8 @@ class MyCovertChannel(CovertChannelBase):
         self.finished: bool = False
         self.groups: list[list[int]] = []
         self.bit_count = 0
+
+
     @staticmethod
     def is_divisable_any(n: int, me: int, divisors: list[int]) -> bool:
         """
@@ -251,6 +260,8 @@ class MyCovertChannel(CovertChannelBase):
             if n % num == 0:
                 return False
         return True
+
+
     def calculate_groups(self, divisors: list[int]):
         """
         Pre-calculates the groups from the given divisors.
@@ -288,6 +299,8 @@ class MyCovertChannel(CovertChannelBase):
         # The bit count is the floor of the logarithm of the number of groups. Each group correspond to
         # one value in an n-bit space. This makes it so that 2**n = group count.
         self.bit_count = int(log2(len(self.groups)))
+
+
     def send(self, log_file_name, ntp_epoch, key, time_file, divisors, port):
         """
         Sends a random message to the receiver, XOR encoded with key and group-encoded (I don't know the term) with divisors.
@@ -313,7 +326,7 @@ class MyCovertChannel(CovertChannelBase):
         # Get a binary message
         binary_message = self.generate_random_binary_message_with_logging(log_file_name)
 
-        # Save the start of the send.
+        # Save the start of the operation.
         with open(time_file, 'w') as f:
             f.write(str(datetime.now().timestamp()) + '\n')
 
@@ -330,7 +343,8 @@ class MyCovertChannel(CovertChannelBase):
         for i in range(0, len(byte_message), 4):
             number = int.from_bytes(byte_message[i:i+4], byteorder='big')
             send_integer(number, super().send, ntp_epoch, port)
-    
+
+
     def process_packet(self, received_packet: Packet, log_file_name: str, key: int, time_file: str, terminator: str):
             """
             Processes a packet.
@@ -339,7 +353,7 @@ class MyCovertChannel(CovertChannelBase):
             :param log_file_name: The file that will be used to save the sent data. Used for comparison between sender and receiver.
             :param key: The key to be used in XOR encoding of the data. The value can be an arbitrary integer. \
             Must be the same in both sender and receiver.
-            :param time_file: The file that will be used to save the throughtput values. Must be the same in both sender and receiver \
+            :param time_file: The file that will be used to save the throughput values. Must be the same in both sender and receiver \
             It will be used by the sender to save the send start time.
             :param terminator: The last character of the stream. Currently, it must be a dot ".".
             """
@@ -365,7 +379,7 @@ class MyCovertChannel(CovertChannelBase):
                     with open(time_file, 'r') as f:
                         start_stamp = float(f.read())
                     
-                    # Calculate the throughtput and write it to the time_file
+                    # Calculate the throughput and write it to the time_file
                     with open(time_file, 'w') as f:
                         throughput = (len(decoded)) / (stop_stamp - start_stamp)
                         f.write(str(throughput) + '\n' + str(len(decoded)))
@@ -377,28 +391,8 @@ class MyCovertChannel(CovertChannelBase):
                     
                     # Flag the finish so that the stop_filter of sniff stops sniffing
                     self.finished = True
-                # ntp_response = b'\x1c' + (  # LI=0, Version=4, Mode=4 (Server)
-                #         b'\x0E'  # Stratum 2 (secondary server)
-                #         b'\x06'  # Poll interval
-                #         b'\xFA'  # Precision
-                #         b'\x00\x00\x00\x00'  # Root Delay
-                #         b'\x00\x00\x00\x00'  # Root Dispersion
-                #         b'LOCL'  # Reference Identifier (e.g., Local clock)
-                #         + get_ntp_timestamp(ntp_epoch).to_bytes(8, 'big')  # Reference Timestamp
-                #         + b'\x00\x00\x00\x00\x00\x00\x00\x00'  # Originate Timestamp
-                #         + get_ntp_timestamp(ntp_epoch).to_bytes(8, 'big')  # Receive Timestamp
-                #         + get_ntp_timestamp(ntp_epoch).to_bytes(8, 'big')  # Transmit Timestamp
-                # )
 
-                # response_packet = (
-                #         IP(dst="sender", src="receiver") /
-                #         UDP(sport=123, dport=client_port) /
-                #         Raw(load=ntp_response)
-                # )
-
-                # to make it look realistic
-                # send(response_packet, verbose=0)
-
+                
     def receive(self, log_file_name, key, terminator, time_file, divisors, port):
         """
         Receives an XOR- and group-encoded message from the sender and decodes it.
