@@ -38,7 +38,7 @@ def get_ntp_timestamp(ntp_epoch: int, hidden_data: int = 0) -> int:
     timestamp = (seconds << 32) | hidden_data
     return timestamp
 
-def send_integer(integer: int, sender_func, ntp_epoch: int, port: int, target_ip: string):
+def send_integer(integer: int, sender_func, ntp_epoch: int, port: int, target_ip: string, lower_layers):
     """
     Sends a hidden integer in an NTP packet.
 
@@ -63,7 +63,7 @@ def send_integer(integer: int, sender_func, ntp_epoch: int, port: int, target_ip
             b'\x00\x00\x00\x00\x00\x00\x00\x00'  # Transmit Timestamp
     )
 
-    ntp_packet = IP(dst=target_ip) / UDP(sport=port, dport=port) / Raw(load=ntp_data)
+    ntp_packet = lower_layers / Raw(load=ntp_data)
     sender_func(ntp_packet)
 
 @cache
@@ -266,6 +266,7 @@ def decode(message: bytes, key: int, bit_count: int, groups: list[list[int]]) ->
 
 class MyCovertChannel(CovertChannelBase):
     def __init__(self):
+        self.lower_layers = None
         self.precision: float = 0
         self.data: bytes = b''
         self.finished: bool = False
@@ -352,6 +353,9 @@ class MyCovertChannel(CovertChannelBase):
         if len(self.groups) == 0:
             self.calculate_groups(divisors)
 
+        if self.lower_layers is None:
+            self.lower_layers = IP(dst=target_ip) / UDP(sport=port, dport=port)
+
         # Get a binary message
         binary_message = self.generate_random_binary_message_with_logging(log_file_name)
 
@@ -371,7 +375,7 @@ class MyCovertChannel(CovertChannelBase):
         # Send the message
         for i in range(0, len(byte_message), 4):
             number = int.from_bytes(byte_message[i:i+4], byteorder='big')
-            send_integer(number, super().send, ntp_epoch, port, target_ip)
+            send_integer(number, super().send, ntp_epoch, port, target_ip, self.lower_layers)
 
 
     def process_packet(self, received_packet: Packet, log_file_name: str, key: int, time_file: str, terminator: str):
