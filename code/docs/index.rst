@@ -6,8 +6,10 @@
 Covert Channel documentation
 ============================
 
-Please add your names, group ID, and your link to the forked public repository here by editing `index.rst` in the docs folder.
-
+Erencan CEYHAN
+Alp BEYSİR
+Group 62
+https://github.com/alpbeysir/ceng435-pa2
 
 .. toctree::
    :maxdepth: 2
