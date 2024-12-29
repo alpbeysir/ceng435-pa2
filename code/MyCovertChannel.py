@@ -38,7 +38,7 @@ def get_ntp_timestamp(ntp_epoch: int, hidden_data: int = 0) -> int:
     timestamp = (seconds << 32) | hidden_data
     return timestamp
 
-def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
+def send_integer(integer: int, sender_func, ntp_epoch: int, port: int, target_ip: string):
     """
     Sends a hidden integer in an NTP packet.
 
@@ -46,6 +46,7 @@ def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
     :param sender_func: The sender function to be used (base send)
     :param ntp_epoch: The NTP epoch
     :param port: The NTP port
+    :param target_ip: The target IP
     """
     current_ntp_timestamp = get_ntp_timestamp(ntp_epoch, integer)
     timestamp_with_hidden_data = current_ntp_timestamp.to_bytes(8, byteorder='big')
@@ -62,7 +63,7 @@ def send_integer(integer: int, sender_func, ntp_epoch: int, port: int):
             b'\x00\x00\x00\x00\x00\x00\x00\x00'  # Transmit Timestamp
     )
 
-    ntp_packet = IP(dst="receiver") / UDP(sport=port, dport=port) / Raw(load=ntp_data)
+    ntp_packet = IP(dst=target_ip) / UDP(sport=port, dport=port) / Raw(load=ntp_data)
     sender_func(ntp_packet)
 
 @cache
@@ -329,7 +330,7 @@ class MyCovertChannel(CovertChannelBase):
         self.bit_count = int(log2(len(self.groups)))
 
 
-    def send(self, log_file_name, ntp_epoch, key, time_file, divisors, port):
+    def send(self, log_file_name, ntp_epoch, key, time_file, divisors, port, target_ip):
         """
         Sends a random message to the receiver, XOR encoded with key and group-encoded (I don't know the term) with divisors.
 
@@ -363,14 +364,14 @@ class MyCovertChannel(CovertChannelBase):
         byte_message = encode(byte_message, key, self.bit_count, self.groups)
         
         # Pad the value with trailing zeroes
-        extra_bytes_number = len(byte_message) % 4;
-        padding_size = (4 - extra_bytes_number) % 4;
+        extra_bytes_number = len(byte_message) % 4
+        padding_size = (4 - extra_bytes_number) % 4
         byte_message = byte_message + (b'\x00' * padding_size)
 
         # Send the message
         for i in range(0, len(byte_message), 4):
             number = int.from_bytes(byte_message[i:i+4], byteorder='big')
-            send_integer(number, super().send, ntp_epoch, port)
+            send_integer(number, super().send, ntp_epoch, port, target_ip)
 
 
     def process_packet(self, received_packet: Packet, log_file_name: str, key: int, time_file: str, terminator: str):
@@ -385,7 +386,7 @@ class MyCovertChannel(CovertChannelBase):
             It will be used by the sender to save the send start time.
             :param terminator: The last character of the stream. Currently, it must be a dot ".".
             """
-            if UDP in received_packet and received_packet[UDP].dport == 123 and received_packet[IP].src != "172.18.0.3":
+            if UDP in received_packet and received_packet[UDP].dport == 123:
                 # Get the secret data
                 ref_timestamp_bytes = get_field_bytes(received_packet[NTPHeader], "orig")
                 rightmost_bytes = ref_timestamp_bytes[-4:]
